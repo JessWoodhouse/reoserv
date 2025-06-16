@@ -84,6 +84,7 @@ pub struct World {
     pub drain_tp_damage: f32,
     pub warp_suck_rate: i32,
     pub ghost_rate: i32,
+    pub polymorph_rate: i32,
     pub info_reveals_drops: bool,
 }
 

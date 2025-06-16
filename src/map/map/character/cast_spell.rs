@@ -5,7 +5,7 @@ use eolib::protocol::{
     net::{
         server::{
             AvatarAdminServerPacket, RecoverPlayerServerPacket, SpellTargetOtherServerPacket,
-            SpellTargetSelfServerPacket,
+            SpellTargetSelfServerPacket,NpcSpecServerPacket,NpcAgreeServerPacket,NpcKilledData,NpcMapInfo 
         },
         PacketAction, PacketFamily,
     },
@@ -310,14 +310,112 @@ impl Map {
 
         match target {
             SpellTarget::Npc(npc_index) => {
-                self.cast_damage_npc(player_id, npc_index, spell_id, spell_data)
+                // polymorph 
+                if spell_data.name == "polymorph"{
+                    self.polymorph_spell(player_id, npc_index, spell_data)
+                    .await 
+                }
+                else{
+                    self.cast_damage_npc(player_id, npc_index, spell_id, spell_data)
                     .await
+                }
             }
             SpellTarget::OtherPlayer(target_player_id) => {
                 self.cast_damage_player(player_id, target_player_id, spell_id, spell_data)
                     .await
             }
             _ => {}
+        }
+    }
+
+
+    async fn polymorph_spell(
+        &mut self,
+        player_id: i32,
+        npc_index: i32,
+        spell_data: &EsfRecord,
+    ) {
+       
+        let character = match self.characters.get_mut(&player_id) {
+            Some(character) => character,
+            None => return,
+        };
+
+        if character.tp < spell_data.tp_cost {
+            return;
+        }
+
+        let new_npc_id = 170;
+
+    
+       // Check if target NPC exists and isn't already polymorphed
+        let (coords, direction) = match self.npcs.get(&npc_index) {
+            Some(npc) => {
+                if npc.polymorphed {
+                    return; // Already polymorphed
+                }
+                (npc.coords, npc.direction)
+            }
+            None => return,
+        };
+
+        // as with cast_damage_npc
+        character.tp -= spell_data.tp_cost;
+
+        // then we clear the npc 
+
+        // Clear the NPC slot on clients first
+        self.send_packet_all(
+            PacketAction::Spec,
+            PacketFamily::Npc,
+            NpcSpecServerPacket {
+                npc_killed_data: NpcKilledData {
+                    npc_index,
+                    ..Default::default()
+                },
+                experience: None,
+            },
+        );
+
+        // update server logic
+        if let Some(npc) = self.npcs.get_mut(&npc_index) {
+            npc.old_id = npc.id;
+            npc.id = new_npc_id;
+            npc.polymorphed = true;
+            
+            // Reset HP to max for the new form
+            if let Some(new_data) = NPC_DB.npcs.get(new_npc_id as usize - 1) {
+                npc.max_hp = new_data.hp;
+                npc.hp = new_data.hp;
+            }
+        }
+
+         // Spawn "polymorphed" NPC on clients
+        self.send_packet_all(
+            PacketAction::Agree,
+            PacketFamily::Npc,
+            NpcAgreeServerPacket {
+                npcs: vec![NpcMapInfo {
+                    index: npc_index,
+                    id: new_npc_id,
+                    coords,
+                    direction,
+                }],
+            },
+        );
+
+        // Update caster's TP
+        if let Some(character) = self.characters.get(&player_id) {
+            if let Some(player) = character.player.as_ref() {
+                player.send(
+                    PacketAction::Player,
+                    PacketFamily::Recover,
+                    &RecoverPlayerServerPacket {
+                        hp: character.hp,
+                        tp: character.tp,
+                    },
+                );
+            }
         }
     }
 
@@ -328,6 +426,7 @@ impl Map {
         spell_id: i32,
         spell_data: &EsfRecord,
     ) {
+       
         let character = match self.characters.get_mut(&player_id) {
             Some(character) => character,
             None => return,

@@ -747,6 +747,8 @@ impl Map {
             Command::RemoveAutoPickupItem { player_id, item_id } => {
                 self.remove_auto_pickup_item(player_id, item_id)
             }
+
+            Command::TimedPolymorph => self.timed_polymorph(),
         }
     }
 }

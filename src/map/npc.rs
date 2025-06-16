@@ -9,6 +9,7 @@ use crate::{FORMULAS, NPC_DB};
 #[derive(Clone, Debug, Default)]
 pub struct Npc {
     pub id: i32,
+    pub old_id: i32,
     pub coords: Coords,
     pub direction: Direction,
     pub spawn_type: i32,
@@ -24,6 +25,8 @@ pub struct Npc {
     pub opponents: Vec<NpcOpponent>,
     pub boss: bool,
     pub child: bool,
+    pub polymorphed: bool,
+    
 }
 
 #[derive(Debug, Default, Clone)]
@@ -126,6 +129,7 @@ impl Npc {
 #[derive(Debug, Default)]
 pub struct NPCBuilder {
     id: i32,
+    old_id: i32,
     coords: Coords,
     direction: Direction,
     spawn_index: Option<usize>,
@@ -140,6 +144,7 @@ pub struct NPCBuilder {
     max_hp: i32,
     boss: bool,
     child: bool,
+    polymorphed: bool,
 }
 
 impl NPCBuilder {
@@ -210,6 +215,7 @@ impl NPCBuilder {
     pub fn build(&self) -> Npc {
         Npc {
             id: self.id,
+            old_id: self.old_id,
             coords: self.coords,
             direction: self.direction,
             spawn_type: self.spawn_type,
@@ -225,6 +231,7 @@ impl NPCBuilder {
             opponents: Vec::new(),
             boss: self.boss,
             child: self.child,
+            polymorphed: self.polymorphed
         }
     }
 }

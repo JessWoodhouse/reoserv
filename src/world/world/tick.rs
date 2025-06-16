@@ -23,6 +23,7 @@ impl World {
         self.quake_ticks += 1;
         self.spike_ticks += 1;
         self.drain_ticks += 1;
+        self.polymorph_ticks += 1;
 
         if self.second_ticks >= ONE_SECOND {
             for player in self.players.values() {
@@ -76,6 +77,10 @@ impl World {
             if self.drain_ticks >= SETTINGS.world.drain_rate {
                 map.timed_drain();
             }
+
+            if self.polymorph_ticks >= SETTINGS.world.polymorph_rate {
+                map.timed_polymorph();
+            }  
         }
 
         if self.second_ticks >= ONE_SECOND {
@@ -113,5 +118,9 @@ impl World {
         if self.drain_ticks >= SETTINGS.world.drain_rate {
             self.drain_ticks = 0;
         }
+
+        if self.polymorph_ticks >= SETTINGS.world.polymorph_rate {
+            self.polymorph_ticks = 0;
+        }  
     }
 }

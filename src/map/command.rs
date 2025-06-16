@@ -468,6 +468,7 @@ pub enum Command {
     TimedDrain,
     TimedQuake,
     TimedSpikes,
+    TimedPolymorph,
     TimedWarpSuck,
     TimedWedding,
     TimedEvacuate,
